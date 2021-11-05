@@ -9,4 +9,4 @@ ADD . /workspace/parnet-tf2/docker/
 WORKDIR /workspace/parnet-tf2/docker
 
 RUN pip install -r requirements.txt
-WORKDIR /workspace/parnet-tf2/
+WORKDIR /workspace

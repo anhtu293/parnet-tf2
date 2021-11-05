@@ -1,3 +1,4 @@
 opencv-python===4.3.0.36
+tensorflow_datasets
 flake8
 tqdm
