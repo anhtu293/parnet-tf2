@@ -2,6 +2,34 @@ import tensorflow as tf
 from tensorflow.keras import layers, activations
 
 
+class Shuffle(layers.Layer):
+    def __init__(self, **kwargs):
+        super(Shuffle, self).__init__(**kwargs)
+
+    def call(self, x):
+        c_idx = tf.range(0, tf.shape(x)[-1])
+        c_idx = tf.random.shuffle(c_idx)
+        x = tf.gather(x, c_idx, axis=-1)
+        return x
+
+
+class Silu(layers.Layer):
+    def __init__(self, **kwargs):
+        super(Silu, self).__init__(**kwargs)
+        self.activation = tf.nn.silu
+
+    def call(self, inputs):
+        return self.activation(inputs)
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
+    def get_config(self):
+        config = {'activation': activations.serialize(self.activation)}
+        base_config = super(Silu, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+
 def SSEBlock(filters, name, **kargs):
     def wrapper(x):
         # if input and output of ParNet block have
@@ -17,8 +45,8 @@ def SSEBlock(filters, name, **kargs):
         se = layers.Conv2D(filters,
                            (1, 1),
                            name=name + '_se_conv1x1')(se)
-        se = activations.sigmoid(se, name=name + '_se_sigmoid')
-        output = tf.math.multiply(x, se, name=name + '_multiply')
+        se = layers.Activation('sigmoid', name=name + '_se_sigmoid')(se)
+        output = layers.Multiply(name=name + '_multiply')([x, se])
         return output
     return wrapper
 
@@ -36,10 +64,10 @@ def ParnetBlock(filters, name, train=True, **kwargs):
                                   (1, 1),
                                   name=name + '_conv1_conv')(x)
             conv1 = layers.BatchNormalization(name=name + '_conv1_bn')(conv1)
-            output = tf.math.add_n([se, conv1, conv3], name=name + '_add')
+            output = layers.Add(name=name + '_add')([se, conv1, conv3])
         else:
-            output = tf.math.add_n([se, conv3], name=name + '_add')
-        output = tf.nn.silu(output, name=name + '_silu')
+            output = layers.Add(name=name + '_add')([se, conv3])
+        output = Silu(name=name + '_silu')(output)
         return output
     return wrapper
 
@@ -71,13 +99,12 @@ def DownsamplingBlock(filters, name, strides=2, groups=1, **kwargs):
                                     strides=2,
                                     groups=groups,
                                     name=name + '_gp_conv')(global_pool)
-        global_pool = activations.sigmoid(global_pool, name=name + '_sigmoid')
+        global_pool = layers.Activation('sigmoid',
+                                        name=name + '_sigmoid')(global_pool)
 
-        output = tf.math.add(pool_1, conv, name=name + '_add')
-        output = tf.math.multiply(output,
-                                  global_pool,
-                                  name=name + '_multiply')
-        output = tf.nn.silu(output, name=name + '_silu')
+        output = layers.Add(name=name + '_add')([pool_1, conv])
+        output = layers.Multiply(name=name + '_multiply')([output, global_pool])
+        output = Silu(name=name + '_silu')(output)
         return output
     return wrapper
 
@@ -86,10 +113,7 @@ def FusionBlock(filters, name, strides=2, groups=2, **kwargs):
     def wrapper(x, y):
         merged = layers.Concatenate(axis=-1,
                                     name=name + '_concatenation')([x, y])
-        c_idx = tf.range(0, tf.shape(merged)[-1])
-        c_idx = tf.random.shuffle(c_idx)
-        merged = tf.gather(merged, c_idx)
-        # reassign shape after gather
+        # merged = Shuffle(name=name + '_shuffle')(merged)
         output = DownsamplingBlock(filters,
                                    name + '_downsampling',
                                    strides,

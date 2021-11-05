@@ -44,13 +44,14 @@ CIFAR_DEFAULT_BLOCKS_ARGS = {
         {'name': 'stream3_fusion_10', 'filters': 384, 'repeats': 1}
     ]
 }
-    
+
 
 def ParNet(dataset='imagenet',
            scale='small',
            num_classes=1000,
-           train=True):
-    assert dataset in ['imagenet', 'cifar'],\
+           train=True,
+           input_shape=(224, 224, 3)):
+    assert dataset in ['imagenet', 'cifar10', 'cifar100'],\
             'Not supported dataset'
     assert scale in ['small', 'medium', 'large', 'extra'],\
         'Invalid scale'
@@ -68,7 +69,6 @@ def ParNet(dataset='imagenet',
     final_down_filters = config['final_down_filters']
 
     # input
-    input_shape = (224, 224, 3) if dataset == 'imagenet' else (32, 32, 3)
     input = tf.keras.Input(shape=input_shape, name='input')
     
     # build head and streams
@@ -111,14 +111,18 @@ def ParNet(dataset='imagenet',
                     'groups': 2 if 'fusion' in arg['name'] else 1,
                     'strides': 2
                 }
-                if idx == 0 and i ==0:
+                if idx == 0 and i == 0:
                     output = layer_fnc(**kwargs)(s_input)
                 else:
                     if 'fusion' not in arg['name']:
                         output = layer_fnc(**kwargs)(output)
                     else:
                         output = layer_fnc(**kwargs)(output, outputs[-1])
+            if stream == 'common_head':
+                outputs.append(output)
+        if stream != 'common_head':
             outputs.append(output)
+            print(outputs)
 
     # create last layers
     if dataset == 'imagenet':
