@@ -4,6 +4,6 @@
 
 ## TODO:
 
-- [ ] Add training script on cifar and imagenet
+- [x] Add training script on cifar and imagenet with multigpu support.
 
 - [ ] Add evaluation code
