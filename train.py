@@ -60,14 +60,15 @@ def main():
         input_shape = (32, 32, 3)
     else:
         num_classes = 100
-        input_shape = (224, 224, 3)
+        input_shape = (32, 32, 3)
 
     # load ready-to-use dataset
     train_ds, val_ds = load_dataset(dataset=args.dataset,
                                     num_classes=num_classes,
                                     augmentation=False,
                                     train=True,
-                                    batch_size=args.batch_size)
+                                    batch_size=args.batch_size,
+                                    image_shape=input_shape)
 
     # optimizer, loss
     optimizer = optimizers.SGD(learning_rate=LR)

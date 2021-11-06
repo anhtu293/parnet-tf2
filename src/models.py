@@ -122,7 +122,6 @@ def ParNet(dataset='imagenet',
                 outputs.append(output)
         if stream != 'common_head':
             outputs.append(output)
-            print(outputs)
 
     # create last layers
     if dataset == 'imagenet':

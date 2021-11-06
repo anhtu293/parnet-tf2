@@ -6,7 +6,8 @@ def load_dataset(dataset,
                  num_classes,
                  augmentation=False,
                  train=True,
-                 batch_size=8):
+                 batch_size=8,
+                 image_shape=(224, 224, 3)):
     # normalize
     def normalize(img, label):
         img = tf.cast(img, tf.float32) / 255.
@@ -17,7 +18,7 @@ def load_dataset(dataset,
     def augment(img, label):
         img = tf.image.random_flip_left_right(img)
         img = tf.image.random_crop(img, (20, 20, 3))
-        img = tf.image.resize(img, (32, 32, 3))
+        img = tf.image.resize(img, image_shape)
         return img, label
 
     if train:
