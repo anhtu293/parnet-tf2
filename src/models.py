@@ -134,7 +134,9 @@ def ParNet(dataset='imagenet',
             (1, 1),
             name='final_conv1x1')(stream_outputs[-1])
     output = tf.keras.layers.GlobalAveragePooling2D()(output)
-    output = tf.keras.layers.Dense(num_classes, name='fc')(output)
+    output = tf.keras.layers.Dense(num_classes,
+                                   activation='softmax',
+                                   name='fc')(output)
 
     # build model
     model = tf.keras.Model(inputs=input, outputs=output)
