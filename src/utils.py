@@ -25,7 +25,7 @@ def load_dataset(dataset,
             split = ['train', 'val']
         else:
             split = ['train[:90%]', 'train[90%:]']
-        train, val = tfds.load('mnist', split=split,
+        train, val = tfds.load(dataset, split=split,
                                shuffle_files=True,
                                as_supervised=True)
         train = train.map(normalize, num_parallel_calls=tf.data.AUTOTUNE)
